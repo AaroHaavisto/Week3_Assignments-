@@ -27,6 +27,7 @@ const addCat = cat => {
       ? Math.max(...catItems.map(item => item.cat_id)) + 1
       : 1,
     ...cat,
+    filename: cat.filename ?? null,
   };
   catItems.push(newCat);
   return newCat;

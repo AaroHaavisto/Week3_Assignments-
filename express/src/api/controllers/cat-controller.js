@@ -16,13 +16,18 @@ const catGet = (req, res) => {
 };
 
 const catPost = (req, res) => {
+  console.log('catPost req.body:', req.body);
+  console.log('catPost req.file:', req.file);
+
   const payload = {
-    ...req.body,
+    name: req.body.cat_name ?? req.body.name,
+    birthdate: req.body.birthdate,
+    weight: req.body.weight,
+    owner: req.body.owner,
     image: req.file ? `/uploads/${req.file.filename}` : req.body.image,
-    thumbnail: req.file?.thumbnail
-      ? `/uploads/${req.file.thumbnail.split(/[/\\]/).pop()}`
-      : undefined,
+    filename: req.file?.filename,
   };
+
   const newCat = addCat(payload);
   res.status(201).json(newCat);
 };

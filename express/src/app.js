@@ -1,5 +1,5 @@
 import express from 'express';
-import catRouter from './api/routes/cat-route.js';
+import catRouter from './api/routes/cat-router.js';
 import userRouter from './api/routes/user-route.js';
 
 const app = express();

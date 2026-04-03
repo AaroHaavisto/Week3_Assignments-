@@ -9,6 +9,7 @@ app.use(express.json());
 
 // Serve static files from the public folder
 app.use('/public', express.static('public'));
+app.use('/uploads', express.static('uploads'));
 
 // Hello World endpoint
 app.get('/', (req, res) => {

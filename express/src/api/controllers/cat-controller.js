@@ -16,7 +16,14 @@ const catGet = (req, res) => {
 };
 
 const catPost = (req, res) => {
-  const newCat = addCat(req.body);
+  const payload = {
+    ...req.body,
+    image: req.file ? `/uploads/${req.file.filename}` : req.body.image,
+    thumbnail: req.file?.thumbnail
+      ? `/uploads/${req.file.thumbnail.split(/[/\\]/).pop()}`
+      : undefined,
+  };
+  const newCat = addCat(payload);
   res.status(201).json(newCat);
 };
 

@@ -29,12 +29,30 @@ const addUser = async user => {
   return getUserById(result.insertId);
 };
 
-const updateUser = async (id, user) => {
+const findUserByUsername = async username => {
+  const [rows] = await promisePool.query(
+    'SELECT * FROM `user` WHERE username = ? LIMIT 1',
+    [username]
+  );
+  return rows[0] || null;
+};
+
+const updateUser = async (id, user, currentUser) => {
+  if (currentUser.role !== 'admin' && currentUser.user_id !== id) {
+    return null;
+  }
+
   const [result] = await promisePool.query(
     `UPDATE \`user\`
      SET name = ?, username = ?, email = ?, role = ?
      WHERE user_id = ?`,
-    [user.name, user.username, user.email, user.role ?? 'user', id]
+    [
+      user.name,
+      user.username,
+      user.email,
+      currentUser.role === 'admin' ? user.role ?? 'user' : currentUser.role,
+      id,
+    ]
   );
 
   if (result.affectedRows === 0) {
@@ -44,7 +62,11 @@ const updateUser = async (id, user) => {
   return getUserById(id);
 };
 
-const deleteUser = async id => {
+const deleteUser = async (id, currentUser) => {
+  if (currentUser.role !== 'admin' && currentUser.user_id !== id) {
+    return 0;
+  }
+
   const connection = await promisePool.getConnection();
 
   try {
@@ -64,4 +86,11 @@ const deleteUser = async id => {
   }
 };
 
-export {getAllUsers, getUserById, addUser, updateUser, deleteUser};
+export {
+  getAllUsers,
+  getUserById,
+  addUser,
+  findUserByUsername,
+  updateUser,
+  deleteUser,
+};

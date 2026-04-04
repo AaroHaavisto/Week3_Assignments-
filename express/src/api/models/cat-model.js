@@ -45,4 +45,38 @@ const addCat = async cat => {
   return getCatById(result.insertId);
 };
 
-export {getAllCats, getCatById, getCatsByUserId, addCat};
+const updateCat = async (id, cat, user) => {
+  const values = [cat.name, cat.birthdate, cat.weight, cat.owner, id];
+  let sql = `
+    UPDATE cat
+    SET cat_name = ?, birthdate = ?, weight = ?, owner = ?
+    WHERE cat_id = ?
+  `;
+
+  if (user.role !== 'admin') {
+    sql += ' AND owner = ?';
+    values.push(user.user_id);
+  }
+
+  const [result] = await promisePool.query(sql, values);
+  if (result.affectedRows === 0) {
+    return null;
+  }
+
+  return getCatById(id);
+};
+
+const deleteCat = async (id, user) => {
+  let sql = 'DELETE FROM cat WHERE cat_id = ?';
+  const values = [id];
+
+  if (user.role !== 'admin') {
+    sql += ' AND owner = ?';
+    values.push(user.user_id);
+  }
+
+  const [result] = await promisePool.query(sql, values);
+  return result.affectedRows;
+};
+
+export {getAllCats, getCatById, getCatsByUserId, addCat, updateCat, deleteCat};

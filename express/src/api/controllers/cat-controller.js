@@ -1,35 +1,59 @@
-import {addCat, getAllCats, getCatById} from '../models/cat-model.js';
+import {
+  addCat,
+  getAllCats,
+  getCatById,
+  getCatsByUserId,
+} from '../models/cat-model.js';
 
-const catListGet = (req, res) => {
-  res.json(getAllCats());
-};
-
-const catGet = (req, res) => {
-  const id = Number(req.params.id);
-  const cat = getCatById(id);
-
-  if (!cat) {
-    return res.status(404).json({message: 'Cat not found.'});
+const catListGet = async (req, res, next) => {
+  try {
+    const cats = await getAllCats();
+    res.json(cats);
+  } catch (error) {
+    next(error);
   }
-
-  return res.json(cat);
 };
 
-const catPost = (req, res) => {
-  console.log('catPost req.body:', req.body);
-  console.log('catPost req.file:', req.file);
+const catGet = async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const cat = await getCatById(id);
 
-  const payload = {
-    name: req.body.cat_name ?? req.body.name,
-    birthdate: req.body.birthdate,
-    weight: req.body.weight,
-    owner: req.body.owner,
-    image: req.file ? `/uploads/${req.file.filename}` : req.body.image,
-    filename: req.file?.filename,
-  };
+    if (!cat) {
+      return res.status(404).json({message: 'Cat not found.'});
+    }
 
-  const newCat = addCat(payload);
-  res.status(201).json(newCat);
+    return res.json(cat);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const catsByUserGet = async (req, res, next) => {
+  try {
+    const userId = Number(req.params.userId);
+    const cats = await getCatsByUserId(userId);
+    res.json(cats);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const catPost = async (req, res, next) => {
+  try {
+    const payload = {
+      name: req.body.cat_name ?? req.body.name,
+      birthdate: req.body.birthdate,
+      weight: req.body.weight,
+      owner: Number(req.body.owner ?? req.body.owner_id ?? req.body.user_id),
+      filename: req.file?.filename ?? null,
+    };
+
+    const newCat = await addCat(payload);
+    res.status(201).json(newCat);
+  } catch (error) {
+    next(error);
+  }
 };
 
 const catPut = (req, res) => {
@@ -40,4 +64,4 @@ const catDelete = (req, res) => {
   res.json({message: 'Cat item deleted.'});
 };
 
-export {catListGet, catGet, catPost, catPut, catDelete};
+export {catListGet, catGet, catsByUserGet, catPost, catPut, catDelete};

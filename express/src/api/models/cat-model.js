@@ -1,36 +1,48 @@
-const catItems = [
-  {
-    cat_id: 1,
-    name: 'Whiskers',
-    birthdate: '2020-05-15',
-    weight: 4.5,
-    owner: 'John Doe',
-    image: 'https://loremflickr.com/320/240/cat',
-  },
-  {
-    cat_id: 2,
-    name: 'Mittens',
-    birthdate: '2021-08-21',
-    weight: 3.8,
-    owner: 'Jane Smith',
-    image: 'https://loremflickr.com/320/240/kitten',
-  },
-];
+import promisePool from '../utils/database.js';
 
-const getAllCats = () => catItems;
+const baseCatSelect = `
+  SELECT
+    c.cat_id,
+    c.cat_name AS name,
+    c.birthdate,
+    c.weight,
+    c.owner AS owner_id,
+    u.name AS owner,
+    c.filename,
+    CASE
+      WHEN c.filename IS NULL OR c.filename = '' THEN NULL
+      ELSE CONCAT('/uploads/', c.filename)
+    END AS image
+  FROM cat c
+  LEFT JOIN \`user\` u ON c.owner = u.user_id
+`;
 
-const getCatById = id => catItems.find(cat => cat.cat_id === id);
-
-const addCat = cat => {
-  const newCat = {
-    cat_id: catItems.length
-      ? Math.max(...catItems.map(item => item.cat_id)) + 1
-      : 1,
-    ...cat,
-    filename: cat.filename ?? null,
-  };
-  catItems.push(newCat);
-  return newCat;
+const getAllCats = async () => {
+  const [rows] = await promisePool.query(`${baseCatSelect} ORDER BY c.cat_id`);
+  return rows;
 };
 
-export {getAllCats, getCatById, addCat};
+const getCatById = async id => {
+  const [rows] = await promisePool.query(`${baseCatSelect} WHERE c.cat_id = ?`, [id]);
+  return rows[0] || null;
+};
+
+const getCatsByUserId = async userId => {
+  const [rows] = await promisePool.query(
+    `${baseCatSelect} WHERE c.owner = ? ORDER BY c.cat_id`,
+    [userId]
+  );
+  return rows;
+};
+
+const addCat = async cat => {
+  const [result] = await promisePool.query(
+    `INSERT INTO cat (cat_name, birthdate, weight, owner, filename)
+     VALUES (?, ?, ?, ?, ?)`,
+    [cat.name, cat.birthdate, cat.weight, cat.owner, cat.filename ?? null]
+  );
+
+  return getCatById(result.insertId);
+};
+
+export {getAllCats, getCatById, getCatsByUserId, addCat};

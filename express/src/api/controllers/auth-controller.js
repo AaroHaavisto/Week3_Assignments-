@@ -4,19 +4,30 @@ import process from 'node:process';
 import {findUserByUsername} from '../models/user-model.js';
 import 'dotenv/config';
 
+const createError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
 const postLogin = async (req, res, next) => {
   try {
-    const user = await findUserByUsername(req.body.username);
+    const body = req.body ?? {};
+    if (!body.username || !body.password) {
+      return next(createError('Missing username or password.', 400));
+    }
+
+    const user = await findUserByUsername(body.username);
     if (!user) {
-      return res.sendStatus(401);
+      return next(createError('Invalid credentials.', 401));
     }
 
     const isBcryptHash = typeof user.password === 'string' && user.password.startsWith('$2');
     const passwordMatch = isBcryptHash
-      ? await bcrypt.compare(req.body.password, user.password)
-      : req.body.password === user.password;
+      ? await bcrypt.compare(body.password, user.password)
+      : body.password === user.password;
     if (!passwordMatch) {
-      return res.sendStatus(401);
+      return next(createError('Invalid credentials.', 401));
     }
 
     const userWithNoPassword = {
@@ -37,11 +48,11 @@ const postLogin = async (req, res, next) => {
   }
 };
 
-const getMe = async (req, res) => {
+const getMe = async (req, res, next) => {
   if (res.locals.user) {
     res.json({message: 'token ok', user: res.locals.user});
   } else {
-    res.sendStatus(401);
+    next(createError('Unauthorized', 401));
   }
 };
 

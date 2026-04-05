@@ -75,3 +75,47 @@ Authorization: Bearer {{token}}
 ### Delete logged-in user's cat
 DELETE http://localhost:3000/api/v1/cats/{{catId}}
 Authorization: Bearer {{token}}
+
+### Error test: create user with empty body
+POST http://localhost:3000/api/v1/users
+Content-Type: application/json
+
+{}
+
+### Error test: create cat with empty body
+POST http://localhost:3000/api/v1/cats
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Error test: upload invalid file type (replace path with an existing .txt file)
+POST http://localhost:3000/api/v1/cats
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=Boundary123
+
+--Boundary123
+Content-Disposition: form-data; name="cat_name"
+
+Bad File Cat
+--Boundary123
+Content-Disposition: form-data; name="birthdate"
+
+2020-01-01
+--Boundary123
+Content-Disposition: form-data; name="weight"
+
+3.5
+--Boundary123
+Content-Disposition: form-data; name="owner"
+
+{{userId}}
+--Boundary123
+Content-Disposition: form-data; name="cat"; filename="bad.txt"
+Content-Type: text/plain
+
+not an image or video
+--Boundary123--
+
+### Error test: upload file over 10 MB (replace path/content with large file payload)
+# Use Postman form-data for this test to easily attach a >10MB file in the "cat" field.

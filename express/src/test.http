@@ -1,0 +1,77 @@
+### Create user
+POST http://localhost:3000/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "Testi Kayttaja",
+  "username": "testi125",
+  "email": "testi125@example.com",
+  "password": "salasana123",
+  "role": "user"
+}
+
+### Login
+# @name login
+POST http://localhost:3000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "testi125",
+  "password": "salasana123"
+}
+
+### Save token from login response (REST Client)
+@token = {{login.response.body.$.token}}
+@userId = {{login.response.body.$.user.user_id}}
+
+### Get current user info with token
+GET http://localhost:3000/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### Update logged-in user
+PUT http://localhost:3000/api/v1/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Testi Kayttaja Paivitetty",
+  "username": "testi125",
+  "email": "testi125@example.com",
+  "role": "user"
+}
+
+### Create cat for logged-in user
+# @name createCat
+POST http://localhost:3000/api/v1/cats
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cat_name": "Testi Kissa",
+  "birthdate": "2020-01-01",
+  "weight": 4.2,
+  "owner": {{userId}}
+}
+
+### Save cat id from create cat response
+@catId = {{createCat.response.body.$.cat_id}}
+
+### Get cats by user id
+GET http://localhost:3000/api/v1/cats/user/{{userId}}
+Authorization: Bearer {{token}}
+
+### Update logged-in user's cat
+PUT http://localhost:3000/api/v1/cats/{{catId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Testi Kissa Paivitetty",
+  "birthdate": "2020-01-01",
+  "weight": 4.5,
+  "owner": {{userId}}
+}
+
+### Delete logged-in user's cat
+DELETE http://localhost:3000/api/v1/cats/{{catId}}
+Authorization: Bearer {{token}}

@@ -1,23 +1,61 @@
 import promisePool from '../utils/database.js';
 
-const getAllUsers = async () => {
+let usersTableCache = null;
+let catsTableCache = null;
+
+const resolveExistingTable = async candidates => {
+  const placeholders = candidates.map(() => '?').join(', ');
   const [rows] = await promisePool.query(
-    'SELECT user_id, name, username, email, role FROM `user` ORDER BY user_id'
+    `SELECT table_name
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name IN (${placeholders})`,
+    candidates
+  );
+
+  if (!rows.length) {
+    throw new Error(`No matching table found from candidates: ${candidates.join(', ')}`);
+  }
+
+  const found = rows.map(row => row.table_name);
+  return candidates.find(name => found.includes(name));
+};
+
+const getUsersTable = async () => {
+  if (!usersTableCache) {
+    usersTableCache = await resolveExistingTable(['user', 'wsk_users']);
+  }
+  return usersTableCache;
+};
+
+const getCatsTable = async () => {
+  if (!catsTableCache) {
+    catsTableCache = await resolveExistingTable(['cat', 'wsk_cats']);
+  }
+  return catsTableCache;
+};
+
+const getAllUsers = async () => {
+  const usersTable = await getUsersTable();
+  const [rows] = await promisePool.query(
+    `SELECT user_id, name, username, email, role FROM \`${usersTable}\` ORDER BY user_id`
   );
   return rows;
 };
 
 const getUserById = async id => {
+  const usersTable = await getUsersTable();
   const [rows] = await promisePool.query(
-    'SELECT user_id, name, username, email, role FROM `user` WHERE user_id = ?',
+    `SELECT user_id, name, username, email, role FROM \`${usersTable}\` WHERE user_id = ?`,
     [id]
   );
   return rows[0] || null;
 };
 
 const addUser = async user => {
+  const usersTable = await getUsersTable();
   const [result] = await promisePool.query(
-    'INSERT INTO `user` (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)',
+    `INSERT INTO \`${usersTable}\` (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)`,
     [
       user.name,
       user.username,
@@ -30,8 +68,9 @@ const addUser = async user => {
 };
 
 const findUserByUsername = async username => {
+  const usersTable = await getUsersTable();
   const [rows] = await promisePool.query(
-    'SELECT * FROM `user` WHERE username = ? LIMIT 1',
+    `SELECT * FROM \`${usersTable}\` WHERE username = ? LIMIT 1`,
     [username]
   );
   return rows[0] || null;
@@ -42,8 +81,9 @@ const updateUser = async (id, user, currentUser) => {
     return null;
   }
 
+  const usersTable = await getUsersTable();
   const [result] = await promisePool.query(
-    `UPDATE \`user\`
+    `UPDATE \`${usersTable}\`
      SET name = ?, username = ?, email = ?, role = ?
      WHERE user_id = ?`,
     [
@@ -68,12 +108,14 @@ const deleteUser = async (id, currentUser) => {
   }
 
   const connection = await promisePool.getConnection();
+  const usersTable = await getUsersTable();
+  const catsTable = await getCatsTable();
 
   try {
     await connection.beginTransaction();
-    await connection.query('DELETE FROM cat WHERE owner = ?', [id]);
+    await connection.query(`DELETE FROM \`${catsTable}\` WHERE owner = ?`, [id]);
     const [deleteResult] = await connection.query(
-      'DELETE FROM `user` WHERE user_id = ?',
+      `DELETE FROM \`${usersTable}\` WHERE user_id = ?`,
       [id]
     );
     await connection.commit();

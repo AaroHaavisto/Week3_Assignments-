@@ -11,7 +11,10 @@ const postLogin = async (req, res, next) => {
       return res.sendStatus(401);
     }
 
-    const passwordMatch = await bcrypt.compare(req.body.password, user.password);
+    const isBcryptHash = typeof user.password === 'string' && user.password.startsWith('$2');
+    const passwordMatch = isBcryptHash
+      ? await bcrypt.compare(req.body.password, user.password)
+      : req.body.password === user.password;
     if (!passwordMatch) {
       return res.sendStatus(401);
     }

@@ -19,6 +19,9 @@ const catListGet = async (req, res, next) => {
 const catGet = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({message: 'Invalid cat id.'});
+    }
     const cat = await getCatById(id);
 
     if (!cat) {
@@ -34,6 +37,9 @@ const catGet = async (req, res, next) => {
 const catsByUserGet = async (req, res, next) => {
   try {
     const userId = Number(req.params.userId);
+    if (Number.isNaN(userId)) {
+      return res.status(400).json({message: 'Invalid user id.'});
+    }
     const cats = await getCatsByUserId(userId);
     res.json(cats);
   } catch (error) {
@@ -61,6 +67,9 @@ const catPost = async (req, res, next) => {
 const catPut = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({message: 'Invalid cat id.'});
+    }
     const payload = {
       name: req.body.cat_name ?? req.body.name,
       birthdate: req.body.birthdate,
@@ -82,6 +91,9 @@ const catPut = async (req, res, next) => {
 const catDelete = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({message: 'Invalid cat id.'});
+    }
     const deletedRows = await deleteCat(id, res.locals.user);
     if (deletedRows === 0) {
       return res.status(403).json({message: 'Not allowed or cat not found.'});
